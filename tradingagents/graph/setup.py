@@ -1,7 +1,10 @@
 # TradingAgents/graph/setup.py
 
 from typing import Dict, Any
-from langchain_openai import ChatOpenAI
+# LangChain's BaseLanguageModel is a good generic type hint,
+# but we can use Any for maximum flexibility.
+from langchain_core.language_models import BaseLanguageModel
+from langchain_huggingface import HuggingFacePipeline
 from langgraph.graph import END, StateGraph, START
 from langgraph.prebuilt import ToolNode
 
@@ -17,8 +20,9 @@ class GraphSetup:
 
     def __init__(
         self,
-        quick_thinking_llm: ChatOpenAI,
-        deep_thinking_llm: ChatOpenAI,
+        # The type hints are changed from ChatOpenAI to a generic BaseLanguageModel
+        quick_thinking_llm: BaseLanguageModel,
+        deep_thinking_llm: BaseLanguageModel,
         toolkit: Toolkit,
         tool_nodes: Dict[str, ToolNode],
         bull_memory,

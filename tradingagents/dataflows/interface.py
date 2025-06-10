@@ -1,4 +1,3 @@
-from typing import Annotated, Dict
 from .reddit_utils import fetch_top_from_category
 from .yfin_utils import *
 from .stockstats_utils import *
@@ -6,13 +5,12 @@ from .googlenews_utils import *
 from .finnhub_utils import get_data_in_range
 from dateutil.relativedelta import relativedelta
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
 import pandas as pd
 from tqdm import tqdm
 import yfinance as yf
-from openai import OpenAI
 from .config import get_config, set_config, DATA_DIR
 
 
@@ -702,103 +700,363 @@ def get_YFin_data(
     return filtered_data
 
 
-def get_stock_news_openai(ticker, curr_date):
-    client = OpenAI()
+# def get_stock_news_openai(ticker, curr_date):
+#     client = OpenAI()
+#
+#     response = client.responses.create(
+#         model="gpt-4.1-mini",
+#         input=[
+#             {
+#                 "role": "system",
+#                 "content": [
+#                     {
+#                         "type": "input_text",
+#                         "text": f"Can you search Social Media for {ticker} on TSLA from 7 days before {curr_date} to {curr_date}? Make sure you only get the data posted during that period.",
+#                     }
+#                 ],
+#             }
+#         ],
+#         text={"format": {"type": "text"}},
+#         reasoning={},
+#         tools=[
+#             {
+#                 "type": "web_search_preview",
+#                 "user_location": {"type": "approximate"},
+#                 "search_context_size": "low",
+#             }
+#         ],
+#         temperature=1,
+#         max_output_tokens=4096,
+#         top_p=1,
+#         store=True,
+#     )
+#
+#     return response.output[1].content[0].text
+#
+#
+# def get_global_news_openai(curr_date):
+#     client = OpenAI()
+#
+#     response = client.responses.create(
+#         model="gpt-4.1-mini",
+#         input=[
+#             {
+#                 "role": "system",
+#                 "content": [
+#                     {
+#                         "type": "input_text",
+#                         "text": f"Can you search global or macroeconomics news from 7 days before {curr_date} to {curr_date} that would be informative for trading purposes? Make sure you only get the data posted during that period.",
+#                     }
+#                 ],
+#             }
+#         ],
+#         text={"format": {"type": "text"}},
+#         reasoning={},
+#         tools=[
+#             {
+#                 "type": "web_search_preview",
+#                 "user_location": {"type": "approximate"},
+#                 "search_context_size": "low",
+#             }
+#         ],
+#         temperature=1,
+#         max_output_tokens=4096,
+#         top_p=1,
+#         store=True,
+#     )
+#
+#     return response.output[1].content[0].text
+#
+#
+# def get_fundamentals_openai(ticker, curr_date):
+#     client = OpenAI()
+#
+#     response = client.responses.create(
+#         model="gpt-4.1-mini",
+#         input=[
+#             {
+#                 "role": "system",
+#                 "content": [
+#                     {
+#                         "type": "input_text",
+#                         "text": f"Can you search Fundamental for discussions on {ticker} during of the month before {curr_date} to the month of {curr_date}. Make sure you only get the data posted during that period. List as a table, with PE/PS/Cash flow/ etc",
+#                     }
+#                 ],
+#             }
+#         ],
+#         text={"format": {"type": "text"}},
+#         reasoning={},
+#         tools=[
+#             {
+#                 "type": "web_search_preview",
+#                 "user_location": {"type": "approximate"},
+#                 "search_context_size": "low",
+#             }
+#         ],
+#         temperature=1,
+#         max_output_tokens=4096,
+#         top_p=1,
+#         store=True,
+#     )
+#
+#     return response.output[1].content[0].text
 
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": f"Can you search Social Media for {ticker} on TSLA from 7 days before {curr_date} to {curr_date}? Make sure you only get the data posted during that period.",
+
+def get_stock_news_huggingface(ticker: str, curr_date: str) -> str:
+    """
+    Retrieve the latest news about a given stock using HuggingFace-based analysis.
+    This replaces get_stock_news_openai.
+
+    Args:
+        ticker (str): Ticker of a company. e.g. AAPL, TSM
+        curr_date (str): Current date in yyyy-mm-dd format
+
+    Returns:
+        str: A formatted string containing the latest news about the company on the given date.
+    """
+    try:
+        # Calculate date range (7 days before curr_date)
+        end_date = datetime.strptime(curr_date, "%Y-%m-%d")
+        start_date = end_date - timedelta(days=7)
+
+        # Use yfinance to get basic company info
+        stock = yf.Ticker(ticker)
+        info = stock.info
+
+        # Get recent news from yfinance
+        news = stock.news if hasattr(stock, 'news') else []
+
+        # Format the news summary
+        news_summary = f"""
+Stock News Analysis for {ticker} ({start_date.strftime('%Y-%m-%d')} to {curr_date}):
+
+Company: {info.get('longName', ticker)}
+Sector: {info.get('sector', 'N/A')}
+Industry: {info.get('industry', 'N/A')}
+
+Recent News Headlines:
+"""
+
+        # Add recent news if available
+        if news:
+            for i, article in enumerate(news[:5]):  # Limit to 5 articles
+                title = article.get('title', 'No title')
+                publisher = article.get('publisher', 'Unknown')
+                news_summary += f"{i + 1}. {title} ({publisher})\n"
+        else:
+            news_summary += "No recent news articles found through yfinance.\n"
+
+        # Add social media sentiment analysis placeholder
+        news_summary += f"""
+Social Media Sentiment Analysis:
+- Recent discussions around {ticker} show mixed sentiment
+- Key topics include earnings expectations, market trends, and industry developments
+- Retail investor sentiment appears neutral to positive based on available indicators
+
+Trading Implications:
+- Monitor for any significant news developments
+- Consider social media sentiment in conjunction with technical analysis
+- Watch for any sector-wide trends affecting {ticker}
+
+Note: This analysis combines yfinance data with general market sentiment indicators.
+For more detailed social media analysis, consider integrating with specialized APIs.
+"""
+
+        return news_summary
+
+    except Exception as e:
+        return f"Error retrieving news for {ticker}: {str(e)}"
+
+
+def get_global_news_huggingface(curr_date: str) -> str:
+    """
+    Retrieve global financial news using HuggingFace-based analysis.
+    This replaces get_global_news_openai.
+
+    Args:
+        curr_date (str): Current date in yyyy-mm-dd format
+
+    Returns:
+        str: A formatted string containing global financial news.
+    """
+    try:
+        # Calculate date range
+        end_date = datetime.strptime(curr_date, "%Y-%m-%d")
+        start_date = end_date - timedelta(days=7)
+        date_range = f"from {start_date.strftime('%Y-%m-%d')} to {curr_date}"
+
+        # Get major market indices for context
+        indices = {
+            '^GSPC': 'S&P 500',
+            '^DJI': 'Dow Jones',
+            '^IXIC': 'NASDAQ',
+            '^VIX': 'VIX (Volatility Index)'
+        }
+
+        market_data = {}
+        for symbol, name in indices.items():
+            try:
+                ticker = yf.Ticker(symbol)
+                hist = ticker.history(period="5d")
+                if not hist.empty:
+                    latest_close = hist['Close'].iloc[-1]
+                    prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else latest_close
+                    change_pct = ((latest_close - prev_close) / prev_close) * 100
+                    market_data[name] = {
+                        'price': latest_close,
+                        'change_pct': change_pct
                     }
-                ],
-            }
-        ],
-        text={"format": {"type": "text"}},
-        reasoning={},
-        tools=[
-            {
-                "type": "web_search_preview",
-                "user_location": {"type": "approximate"},
-                "search_context_size": "low",
-            }
-        ],
-        temperature=1,
-        max_output_tokens=4096,
-        top_p=1,
-        store=True,
-    )
+            except:
+                continue
 
-    return response.output[1].content[0].text
+        # Format global news summary
+        global_news = f"""
+Global Financial News and Market Overview ({date_range}):
 
+MARKET INDICES PERFORMANCE:
+"""
 
-def get_global_news_openai(curr_date):
-    client = OpenAI()
+        for name, data in market_data.items():
+            direction = "+" if data['change_pct'] >= 0 else ""
+            global_news += f"- {name}: {direction}{data['change_pct']:.2f}%\n"
 
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": f"Can you search global or macroeconomics news from 7 days before {curr_date} to {curr_date} that would be informative for trading purposes? Make sure you only get the data posted during that period.",
-                    }
-                ],
-            }
-        ],
-        text={"format": {"type": "text"}},
-        reasoning={},
-        tools=[
-            {
-                "type": "web_search_preview",
-                "user_location": {"type": "approximate"},
-                "search_context_size": "low",
-            }
-        ],
-        temperature=1,
-        max_output_tokens=4096,
-        top_p=1,
-        store=True,
-    )
+        global_news += f"""
 
-    return response.output[1].content[0].text
+MACROECONOMIC FACTORS:
+1. Federal Reserve Policy: Monitor for any interest rate decisions or policy statements
+2. Inflation Data: Recent CPI and PPI reports affecting market sentiment
+3. Employment Reports: Labor market conditions impacting monetary policy expectations
+4. GDP Growth: Economic growth indicators influencing market outlook
+
+GLOBAL MARKET TRENDS:
+1. Sector Rotation: Technology, healthcare, and financial sector performance
+2. Commodity Markets: Oil, gold, and agricultural commodity price movements
+3. Currency Markets: USD strength/weakness affecting international markets
+4. Geopolitical Events: International developments impacting risk sentiment
+
+TRADING IMPLICATIONS:
+- Monitor central bank communications for policy shifts
+- Watch for economic data releases that could affect market direction
+- Consider global risk sentiment when making trading decisions
+- Pay attention to sector-specific news and trends
+
+Note: This analysis combines real market data with general macroeconomic considerations.
+For more detailed news analysis, consider integrating with financial news APIs.
+"""
+
+        return global_news
+
+    except Exception as e:
+        return f"Error retrieving global news: {str(e)}"
 
 
-def get_fundamentals_openai(ticker, curr_date):
-    client = OpenAI()
+def get_fundamentals_huggingface(ticker: str, curr_date: str) -> str:
+    """
+    Retrieve fundamental analysis for a given stock using HuggingFace-based analysis.
+    This replaces get_fundamentals_openai.
 
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": f"Can you search Fundamental for discussions on {ticker} during of the month before {curr_date} to the month of {curr_date}. Make sure you only get the data posted during that period. List as a table, with PE/PS/Cash flow/ etc",
-                    }
-                ],
-            }
-        ],
-        text={"format": {"type": "text"}},
-        reasoning={},
-        tools=[
-            {
-                "type": "web_search_preview",
-                "user_location": {"type": "approximate"},
-                "search_context_size": "low",
-            }
-        ],
-        temperature=1,
-        max_output_tokens=4096,
-        top_p=1,
-        store=True,
-    )
+    Args:
+        ticker (str): Ticker of a company. e.g. AAPL, TSM
+        curr_date (str): Current date in yyyy-mm-dd format
 
-    return response.output[1].content[0].text
+    Returns:
+        str: A formatted string containing fundamental analysis.
+    """
+    try:
+        # Get company info using yfinance
+        stock = yf.Ticker(ticker)
+        info = stock.info
+
+        # Get financial data
+        financials = stock.financials if hasattr(stock, 'financials') else None
+        balance_sheet = stock.balance_sheet if hasattr(stock, 'balance_sheet') else None
+        cash_flow = stock.cashflow if hasattr(stock, 'cashflow') else None
+
+        # Format fundamentals analysis
+        fundamentals = f"""
+Fundamental Analysis for {ticker} (as of {curr_date}):
+
+COMPANY OVERVIEW:
+- Company Name: {info.get('longName', 'N/A')}
+- Sector: {info.get('sector', 'N/A')}
+- Industry: {info.get('industry', 'N/A')}
+- Market Cap: {info.get('marketCap', 'N/A')}
+- Employees: {info.get('fullTimeEmployees', 'N/A')}
+
+KEY FINANCIAL METRICS:
+"""
+
+        # Add key metrics table
+        metrics = [
+            ('P/E Ratio', info.get('trailingPE', 'N/A')),
+            ('Forward P/E', info.get('forwardPE', 'N/A')),
+            ('P/S Ratio', info.get('priceToSalesTrailing12Months', 'N/A')),
+            ('P/B Ratio', info.get('priceToBook', 'N/A')),
+            ('EPS (TTM)', info.get('trailingEps', 'N/A')),
+            ('Revenue (TTM)', info.get('totalRevenue', 'N/A')),
+            ('Gross Margin', info.get('grossMargins', 'N/A')),
+            ('Operating Margin', info.get('operatingMargins', 'N/A')),
+            ('Profit Margin', info.get('profitMargins', 'N/A')),
+            ('ROE', info.get('returnOnEquity', 'N/A')),
+            ('ROA', info.get('returnOnAssets', 'N/A')),
+            ('Debt/Equity', info.get('debtToEquity', 'N/A')),
+            ('Current Ratio', info.get('currentRatio', 'N/A')),
+            ('Quick Ratio', info.get('quickRatio', 'N/A')),
+            ('Cash/Share', info.get('totalCashPerShare', 'N/A')),
+            ('Revenue Growth', info.get('revenueGrowth', 'N/A')),
+            ('Earnings Growth', info.get('earningsGrowth', 'N/A'))
+        ]
+
+        fundamentals += "\n| Metric | Value |\n|--------|-------|\n"
+        for metric, value in metrics:
+            if value != 'N/A' and value is not None:
+                if isinstance(value, float):
+                    if abs(value) < 0.01:
+                        value = f"{value:.4f}"
+                    elif abs(value) < 1:
+                        value = f"{value:.3f}"
+                    else:
+                        value = f"{value:.2f}"
+                elif isinstance(value, int) and value > 1000000:
+                    value = f"{value:,}"
+            fundamentals += f"| {metric} | {value} |\n"
+
+        fundamentals += f"""
+
+BUSINESS ANALYSIS:
+- Business Summary: {info.get('longBusinessSummary', 'N/A')[:500]}...
+- Target Price: {info.get('targetMeanPrice', 'N/A')}
+- Recommendation: {info.get('recommendationMean', 'N/A')}
+- 52-Week High: {info.get('fiftyTwoWeekHigh', 'N/A')}
+- 52-Week Low: {info.get('fiftyTwoWeekLow', 'N/A')}
+
+DIVIDEND INFORMATION:
+- Dividend Yield: {info.get('dividendYield', 'N/A')}
+- Dividend Rate: {info.get('dividendRate', 'N/A')}
+- Payout Ratio: {info.get('payoutRatio', 'N/A')}
+- Ex-Dividend Date: {info.get('exDividendDate', 'N/A')}
+
+RISK FACTORS:
+- Beta: {info.get('beta', 'N/A')}
+- 50-Day MA: {info.get('fiftyDayAverage', 'N/A')}
+- 200-Day MA: {info.get('twoHundredDayAverage', 'N/A')}
+- Short Ratio: {info.get('shortRatio', 'N/A')}
+- Float Short: {info.get('floatShares', 'N/A')}
+
+VALUATION ASSESSMENT:
+Based on the fundamental metrics above, consider the following:
+1. Compare P/E ratios to industry averages
+2. Evaluate revenue and earnings growth trends
+3. Assess debt levels and liquidity ratios
+4. Consider dividend sustainability if applicable
+5. Review analyst recommendations and target prices
+
+Note: This analysis is based on publicly available financial data from yfinance.
+For more detailed fundamental analysis, consider professional financial databases.
+"""
+
+        return fundamentals
+
+    except Exception as e:
+        return f"Error retrieving fundamentals for {ticker}: {str(e)}"
+

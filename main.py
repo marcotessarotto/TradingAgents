@@ -3,10 +3,10 @@ from tradingagents.default_config import DEFAULT_CONFIG
 
 # Create a custom config
 config = DEFAULT_CONFIG.copy()
-config["deep_think_llm"] = "gpt-4.1-nano"  # Use a different model
-config["quick_think_llm"] = "gpt-4.1-nano"  # Use a different model
+config["deep_think_llm"] = "HuggingFaceH4/zephyr-7b-beta"  # Use HuggingFace model
+config["quick_think_llm"] = "HuggingFaceH4/zephyr-7b-beta"  # Use HuggingFace model
 config["max_debate_rounds"] = 1  # Increase debate rounds
-config["online_tools"] = True  # Increase debate rounds
+config["online_tools"] = True  # Enable online tools
 
 # Initialize with custom config
 ta = TradingAgentsGraph(debug=True, config=config)

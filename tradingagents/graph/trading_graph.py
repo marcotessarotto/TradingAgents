@@ -6,7 +6,8 @@ import json
 from datetime import date
 from typing import Dict, Any, Tuple, List, Optional
 
-from langchain_openai import ChatOpenAI
+from langchain_huggingface import HuggingFacePipeline
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from langgraph.prebuilt import ToolNode
 
 from tradingagents.agents import *
@@ -48,16 +49,18 @@ class TradingAgentsGraph:
         # Update the interface's config
         set_config(self.config)
 
-        # Create necessary directories
+        # Create the necessary directories
         os.makedirs(
             os.path.join(self.config["project_dir"], "dataflows/data_cache"),
             exist_ok=True,
         )
 
-        # Initialize LLMs
-        self.deep_thinking_llm = ChatOpenAI(model=self.config["deep_think_llm"])
-        self.quick_thinking_llm = ChatOpenAI(
-            model=self.config["quick_think_llm"], temperature=0.1
+        # Initialize HuggingFace LLMs
+        self.deep_thinking_llm = self._create_huggingface_llm(
+            self.config["deep_think_llm"], temperature=0.7
+        )
+        self.quick_thinking_llm = self._create_huggingface_llm(
+            self.config["quick_think_llm"], temperature=0.1
         )
         self.toolkit = Toolkit(config=self.config)
 
@@ -98,6 +101,61 @@ class TradingAgentsGraph:
         # Set up the graph
         self.graph = self.graph_setup.setup_graph(selected_analysts)
 
+    def _create_huggingface_llm(self, model_name: str, temperature: float = 0.1):
+        """Create a HuggingFace LLM pipeline."""
+        try:
+            # Get model kwargs from config, with defaults
+            model_kwargs = self.config.get("hf_model_kwargs", {
+                "temperature": temperature,
+                "max_length": 2048,
+                "do_sample": True,
+                "top_p": 0.95,
+                "top_k": 50,
+            })
+            
+            # Update temperature if specified
+            model_kwargs["temperature"] = temperature
+            
+            # Get pipeline kwargs from config, with defaults
+            pipeline_kwargs = self.config.get("hf_pipeline_kwargs", {
+                "device_map": "auto",
+                "torch_dtype": "auto",
+                "trust_remote_code": True,
+            })
+
+            # Create the HuggingFace pipeline
+            hf_pipeline = pipeline(
+                "text-generation",
+                model=model_name,
+                tokenizer=model_name,
+                **pipeline_kwargs
+            )
+            
+            # Create LangChain wrapper
+            llm = HuggingFacePipeline(
+                pipeline=hf_pipeline,
+                model_kwargs=model_kwargs
+            )
+            
+            return llm
+            
+        except Exception as e:
+            print(f"Error creating HuggingFace LLM for {model_name}: {e}")
+            print("Falling back to default settings...")
+            
+            # Fallback with minimal settings
+            hf_pipeline = pipeline(
+                "text-generation",
+                model=model_name,
+                device_map="auto",
+                trust_remote_code=True
+            )
+            
+            return HuggingFacePipeline(
+                pipeline=hf_pipeline,
+                model_kwargs={"temperature": temperature, "max_length": 1024}
+            )
+
     def _create_tool_nodes(self) -> Dict[str, ToolNode]:
         """Create tool nodes for different data sources."""
         return {
@@ -114,7 +172,7 @@ class TradingAgentsGraph:
             "social": ToolNode(
                 [
                     # online tools
-                    self.toolkit.get_stock_news_openai,
+                    self.toolkit.get_stock_news_huggingface,
                     # offline tools
                     self.toolkit.get_reddit_stock_info,
                 ]
@@ -122,7 +180,7 @@ class TradingAgentsGraph:
             "news": ToolNode(
                 [
                     # online tools
-                    self.toolkit.get_global_news_openai,
+                    self.toolkit.get_global_news_huggingface,
                     self.toolkit.get_google_news,
                     # offline tools
                     self.toolkit.get_finnhub_news,
@@ -132,7 +190,7 @@ class TradingAgentsGraph:
             "fundamentals": ToolNode(
                 [
                     # online tools
-                    self.toolkit.get_fundamentals_openai,
+                    self.toolkit.get_fundamentals_huggingface,
                     # offline tools
                     self.toolkit.get_finnhub_company_insider_sentiment,
                     self.toolkit.get_finnhub_company_insider_transactions,
@@ -169,7 +227,7 @@ class TradingAgentsGraph:
             # Standard mode without tracing
             final_state = self.graph.invoke(init_agent_state, **args)
 
-        # Store current state for reflection
+        # Store the current state for reflection
         self.curr_state = final_state
 
         # Log state

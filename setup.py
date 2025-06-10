@@ -1,3 +1,4 @@
+
 """
 Setup script for the TradingAgents package.
 """
@@ -14,7 +15,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "langchain>=0.1.0",
-        "langchain-openai>=0.0.2",
+        "langchain-huggingface>=0.0.1",
         "langchain-experimental>=0.0.40",
         "langgraph>=0.0.20",
         "numpy>=1.24.0",
@@ -25,6 +26,12 @@ setup(
         "typer>=0.9.0",
         "rich>=13.0.0",
         "questionary>=2.0.1",
+        "torch>=2.0.0",
+        "transformers>=4.30.0",
+        "accelerate>=0.20.0",
+        "bitsandbytes>=0.41.0",
+        "sentence-transformers>=2.2.0",  # Added for embeddings
+        "chromadb>=0.4.0",  # Added for vector database
     ],
     python_requires=">=3.10",
     entry_points={

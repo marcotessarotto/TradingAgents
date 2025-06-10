@@ -1,15 +1,7 @@
-from langchain_core.messages import BaseMessage, HumanMessage, ToolMessage, AIMessage
-from typing import List
 from typing import Annotated
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import RemoveMessage
 from langchain_core.tools import tool
 from datetime import date, timedelta, datetime
-import functools
-import pandas as pd
-import os
-from dateutil.relativedelta import relativedelta
-from langchain_openai import ChatOpenAI
 import tradingagents.dataflows.interface as interface
 from tradingagents.default_config import DEFAULT_CONFIG
 
@@ -352,60 +344,107 @@ class Toolkit:
         google_news_results = interface.get_google_news(query, curr_date, 7)
 
         return google_news_results
+    #
+    # @staticmethod
+    # @tool
+    # def get_stock_news_openai(
+    #     ticker: Annotated[str, "the company's ticker"],
+    #     curr_date: Annotated[str, "Current date in yyyy-mm-dd format"],
+    # ):
+    #     """
+    #     Retrieve the latest news about a given stock by using OpenAI's news API.
+    #     Args:
+    #         ticker (str): Ticker of a company. e.g. AAPL, TSM
+    #         curr_date (str): Current date in yyyy-mm-dd format
+    #     Returns:
+    #         str: A formatted string containing the latest news about the company on the given date.
+    #     """
+    #
+    #     openai_news_results = interface.get_stock_news_openai(ticker, curr_date)
+    #
+    #     return openai_news_results
+    #
+    # @staticmethod
+    # @tool
+    # def get_global_news_openai(
+    #     curr_date: Annotated[str, "Current date in yyyy-mm-dd format"],
+    # ):
+    #     """
+    #     Retrieve the latest macroeconomics news on a given date using OpenAI's macroeconomics news API.
+    #     Args:
+    #         curr_date (str): Current date in yyyy-mm-dd format
+    #     Returns:
+    #         str: A formatted string containing the latest macroeconomic news on the given date.
+    #     """
+    #
+    #     openai_news_results = interface.get_global_news_openai(curr_date)
+    #
+    #     return openai_news_results
+    #
+    # @staticmethod
+    # @tool
+    # def get_fundamentals_openai(
+    #     ticker: Annotated[str, "the company's ticker"],
+    #     curr_date: Annotated[str, "Current date in yyyy-mm-dd format"],
+    # ):
+    #     """
+    #     Retrieve the latest fundamental information about a given stock on a given date by using OpenAI's news API.
+    #     Args:
+    #         ticker (str): Ticker of a company. e.g. AAPL, TSM
+    #         curr_date (str): Current date in yyyy-mm-dd format
+    #     Returns:
+    #         str: A formatted string containing the latest fundamental information about the company on the given date.
+    #     """
+    #
+    #     openai_fundamentals_results = interface.get_fundamentals_openai(
+    #         ticker, curr_date
+    #     )
+    #
+    #     return openai_fundamentals_results
+
 
     @staticmethod
     @tool
-    def get_stock_news_openai(
+    def get_stock_news_huggingface(
         ticker: Annotated[str, "the company's ticker"],
         curr_date: Annotated[str, "Current date in yyyy-mm-dd format"],
     ):
         """
-        Retrieve the latest news about a given stock by using OpenAI's news API.
+        Retrieve the latest news about a given stock using HuggingFace-based analysis.
         Args:
             ticker (str): Ticker of a company. e.g. AAPL, TSM
             curr_date (str): Current date in yyyy-mm-dd format
         Returns:
             str: A formatted string containing the latest news about the company on the given date.
         """
-
-        openai_news_results = interface.get_stock_news_openai(ticker, curr_date)
-
-        return openai_news_results
+        return interface.get_stock_news_huggingface(ticker, curr_date)
 
     @staticmethod
     @tool
-    def get_global_news_openai(
+    def get_global_news_huggingface(
         curr_date: Annotated[str, "Current date in yyyy-mm-dd format"],
     ):
         """
-        Retrieve the latest macroeconomics news on a given date using OpenAI's macroeconomics news API.
+        Retrieve global financial news using HuggingFace-based analysis.
         Args:
             curr_date (str): Current date in yyyy-mm-dd format
         Returns:
-            str: A formatted string containing the latest macroeconomic news on the given date.
+            str: A formatted string containing global financial news.
         """
-
-        openai_news_results = interface.get_global_news_openai(curr_date)
-
-        return openai_news_results
+        return interface.get_global_news_huggingface(curr_date)
 
     @staticmethod
     @tool
-    def get_fundamentals_openai(
+    def get_fundamentals_huggingface(
         ticker: Annotated[str, "the company's ticker"],
         curr_date: Annotated[str, "Current date in yyyy-mm-dd format"],
     ):
         """
-        Retrieve the latest fundamental information about a given stock on a given date by using OpenAI's news API.
+        Retrieve fundamental analysis for a given stock using HuggingFace-based analysis.
         Args:
             ticker (str): Ticker of a company. e.g. AAPL, TSM
             curr_date (str): Current date in yyyy-mm-dd format
         Returns:
-            str: A formatted string containing the latest fundamental information about the company on the given date.
+            str: A formatted string containing fundamental analysis.
         """
-
-        openai_fundamentals_results = interface.get_fundamentals_openai(
-            ticker, curr_date
-        )
-
-        return openai_fundamentals_results
+        return interface.get_fundamentals_huggingface(ticker, curr_date)

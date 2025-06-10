@@ -1,6 +1,7 @@
 import questionary
 from typing import List, Optional, Tuple, Dict
 
+from cli.main import console
 from cli.models import AnalystType
 
 ANALYST_ORDER = [
