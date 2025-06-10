@@ -25,6 +25,8 @@
 
 ---
 
+# ***NOTE: This is work in progress, to use HuggingFace locally hosted models instead of OpenAi models ***
+
 # TradingAgents: Multi-Agents LLM Financial Trading Framework 
 
 > 🎉 **TradingAgents** officially released! We have received numerous inquiries about the work, and we would like to express our thanks for the enthusiasm in our community.
@@ -112,6 +114,23 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+### Model Support
+
+TradingAgents supports multiple LLM providers:
+
+#### HuggingFace Models (Recommended for Local/Private Use)
+- **No API costs** - Run models locally
+- **Privacy-first** - All processing happens on your hardware
+- **GPU acceleration** - Leverage your local GPU for faster inference
+- **Wide model selection** - Choose from thousands of open-source models
+
+Popular HuggingFace models which can be tested with TradingAgents:
+- `HuggingFaceH4/zephyr-7b-beta` (Default)
+- `microsoft/DialoGPT-medium`
+- `meta-llama/Llama-2-7b-chat-hf`
+- `mistralai/Mistral-7B-Instruct-v0.1`
+
+
 ### Required APIs
 
 You will also need the FinnHub API for financial data. All of our code is implemented with the free tier.
@@ -119,10 +138,7 @@ You will also need the FinnHub API for financial data. All of our code is implem
 export FINNHUB_API_KEY=$YOUR_FINNHUB_API_KEY
 ```
 
-You will need the OpenAI API for all the agents.
-```bash
-export OPENAI_API_KEY=$YOUR_OPENAI_API_KEY
-```
+
 
 ### CLI Usage
 
@@ -175,8 +191,8 @@ from tradingagents.default_config import DEFAULT_CONFIG
 
 # Create a custom config
 config = DEFAULT_CONFIG.copy()
-config["deep_think_llm"] = "gpt-4.1-nano"  # Use a different model
-config["quick_think_llm"] = "gpt-4.1-nano"  # Use a different model
+config["deep_think_llm"] = "HuggingFaceH4/zephyr-7b-beta"  # Use a different model
+config["quick_think_llm"] = "HuggingFaceH4/zephyr-7b-beta"  # Use a different model
 config["max_debate_rounds"] = 1  # Increase debate rounds
 config["online_tools"] = True # Use online tools or cached data
 
