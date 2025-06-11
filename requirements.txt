@@ -26,3 +26,4 @@ transformers
 accelerate
 bitsandbytes
 langchain-huggingface
+sentence-transformers
