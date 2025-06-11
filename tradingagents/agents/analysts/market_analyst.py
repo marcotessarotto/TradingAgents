@@ -10,6 +10,12 @@ def create_market_analyst(llm, toolkit):
         ticker = state["company_of_interest"]
         company_name = state["company_of_interest"]
 
+        # Check if the last message is not a HumanMessage, and if so, remove it
+        from langchain_core.messages import HumanMessage
+        messages = state["messages"]
+        if messages and not isinstance(messages[-1], HumanMessage):
+            messages = messages[:-1]
+
         if toolkit.config["online_tools"]:
             tools = [
                 toolkit.get_YFin_data_online,
@@ -74,7 +80,23 @@ Volume-Based Indicators:
 
         chain = prompt | llm.bind_tools(tools)
 
-        result = chain.invoke(state["messages"])
+        # if last message of state["messages"] is not of an instance of HumanMessage, remove it
+        from langchain_core.messages import HumanMessage
+        messages = state["messages"]
+        if messages and not isinstance(messages[-1], HumanMessage):
+            messages = messages[:-1]
+
+        print(f"len(messages) = {len(messages)}")
+        for m in messages:
+            print(m)
+            print(type(m))
+
+        # if len(messages) == 0, add an empty HumanMessage instance
+        if len(messages) == 0:
+            messages = [HumanMessage(content="")]
+
+        result = chain.invoke(messages)
+        # result = chain.invoke(state["messages"])
 
         return {
             "messages": [result],
