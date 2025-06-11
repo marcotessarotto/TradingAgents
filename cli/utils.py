@@ -128,10 +128,10 @@ def select_shallow_thinking_agent() -> str:
 
     # Define shallow thinking llm engine options with their corresponding model names
     SHALLOW_AGENT_OPTIONS = [
-        ("GPT-4o-mini - Fast and efficient for quick tasks", "gpt-4o-mini"),
-        ("GPT-4.1-nano - Ultra-lightweight model for basic operations", "gpt-4.1-nano"),
-        ("GPT-4.1-mini - Compact model with good performance", "gpt-4.1-mini"),
-        ("GPT-4o - Standard model with solid capabilities", "gpt-4o"),
+        ("Zephyr-7B-Beta - Fast and efficient conversational model", "HuggingFaceH4/zephyr-7b-beta"),
+        ("DialoGPT-Medium - Lightweight conversational model", "microsoft/DialoGPT-medium"),
+        ("Mistral-7B-Instruct - Compact instruction-following model", "mistralai/Mistral-7B-Instruct-v0.1"),
+        ("Llama-2-7B-Chat - Standard conversational model with solid capabilities", "meta-llama/Llama-2-7b-chat-hf"),
     ]
 
     choice = questionary.select(
@@ -164,13 +164,13 @@ def select_deep_thinking_agent() -> str:
 
     # Define deep thinking llm engine options with their corresponding model names
     DEEP_AGENT_OPTIONS = [
-        ("GPT-4.1-nano - Ultra-lightweight model for basic operations", "gpt-4.1-nano"),
-        ("GPT-4.1-mini - Compact model with good performance", "gpt-4.1-mini"),
-        ("GPT-4o - Standard model with solid capabilities", "gpt-4o"),
-        ("o4-mini - Specialized reasoning model (compact)", "o4-mini"),
-        ("o3-mini - Advanced reasoning model (lightweight)", "o3-mini"),
-        ("o3 - Full advanced reasoning model", "o3"),
-        ("o1 - Premier reasoning and problem-solving model", "o1"),
+        ("Phi-3-mini-4k - Ultra-lightweight model for basic operations", "microsoft/Phi-3-mini-4k-instruct"),
+        ("Zephyr-7B-Beta - Compact model with good performance", "HuggingFaceH4/zephyr-7b-beta"),
+        ("Mistral-7B-Instruct - Standard model with solid capabilities", "mistralai/Mistral-7B-Instruct-v0.1"),
+        ("Llama-2-13B-Chat - Specialized reasoning model (compact)", "meta-llama/Llama-2-13b-chat-hf"),
+        ("CodeLlama-13B-Instruct - Advanced reasoning model (lightweight)", "codellama/CodeLlama-13b-Instruct-hf"),
+        ("Mixtral-8x7B-Instruct - Full advanced reasoning model", "mistralai/Mixtral-8x7B-Instruct-v0.1"),
+        ("Llama-2-70B-Chat - Premier reasoning and problem-solving model", "meta-llama/Llama-2-70b-chat-hf"),
     ]
 
     choice = questionary.select(
