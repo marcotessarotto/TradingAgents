@@ -104,6 +104,9 @@ class TradingAgentsGraph:
     def _create_huggingface_llm(self, model_name: str, temperature: float = 0.1):
         """Create a HuggingFace LLM pipeline."""
         try:
+            from transformers import pipeline
+            from langchain_huggingface import HuggingFacePipeline, ChatHuggingFace
+
             # Get model kwargs from config, with defaults
             model_kwargs = self.config.get("hf_model_kwargs", {
                 "temperature": temperature,
@@ -112,10 +115,10 @@ class TradingAgentsGraph:
                 "top_p": 0.95,
                 "top_k": 50,
             })
-            
+
             # Update temperature if specified
             model_kwargs["temperature"] = temperature
-            
+
             # Get pipeline kwargs from config, with defaults
             pipeline_kwargs = self.config.get("hf_pipeline_kwargs", {
                 "device_map": "auto",
@@ -130,19 +133,26 @@ class TradingAgentsGraph:
                 tokenizer=model_name,
                 **pipeline_kwargs
             )
-            
-            # Create LangChain wrapper
-            llm = HuggingFacePipeline(
+
+            # First create HuggingFacePipeline wrapper
+            hf_llm = HuggingFacePipeline(
                 pipeline=hf_pipeline,
                 model_kwargs=model_kwargs
             )
-            
+
+            # Then create ChatHuggingFace wrapper with the HuggingFacePipeline
+            llm = ChatHuggingFace(
+                llm=hf_llm,
+                # Add this parameter to handle the message format more flexibly
+                model_id=model_name
+            )
+
             return llm
-            
+
         except Exception as e:
             print(f"Error creating HuggingFace LLM for {model_name}: {e}")
             print("Falling back to default settings...")
-            
+
             # Fallback with minimal settings
             hf_pipeline = pipeline(
                 "text-generation",
@@ -150,10 +160,17 @@ class TradingAgentsGraph:
                 device_map="auto",
                 trust_remote_code=True
             )
-            
-            return HuggingFacePipeline(
+
+            # Create HuggingFacePipeline wrapper first
+            hf_llm = HuggingFacePipeline(
                 pipeline=hf_pipeline,
                 model_kwargs={"temperature": temperature, "max_length": 1024}
+            )
+
+            # Then create ChatHuggingFace wrapper
+            return ChatHuggingFace(
+                llm=hf_llm,
+                model_id=model_name
             )
 
     def _create_tool_nodes(self) -> Dict[str, ToolNode]:

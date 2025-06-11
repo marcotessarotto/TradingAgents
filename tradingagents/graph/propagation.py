@@ -1,6 +1,5 @@
-# TradingAgents/graph/propagation.py
-
 from typing import Dict, Any
+from langchain_core.messages import HumanMessage
 from tradingagents.agents.utils.agent_states import (
     AgentState,
     InvestDebateState,
@@ -20,7 +19,8 @@ class Propagator:
     ) -> Dict[str, Any]:
         """Create the initial state for the agent graph."""
         return {
-            "messages": [("human", company_name)],
+            # Use proper HumanMessage instead of tuple
+            "messages": [HumanMessage(content=company_name)],
             "company_of_interest": company_name,
             "trade_date": str(trade_date),
             "investment_debate_state": InvestDebateState(
